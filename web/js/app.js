@@ -2,11 +2,12 @@ var pizzaName = 'pizzaApp:view'
 let launchMenuDialog
 let addMenuOption
 
-SYMPHONY.remote.hello().then(function (data) {
+// Initialise connection for Extension API services
+SYMPHONY.remote.hello().then(function(data) {
   var themeColor = data.themeV2.name
   var themeSize = data.themeV2.size
   document.body.className = 'symphony-external-app ' + themeColor + ' ' + themeSize
-  document.querySelector('#orderHistory').innerHTML = 'Loading..'
+  document.querySelector('#orderHistory').innerHTML = 'Loading...'
 
   SYMPHONY.application
     .connect('pizzaApp', ['pizzaApp:controller', 'dialogs'], [pizzaName])
@@ -14,6 +15,7 @@ SYMPHONY.remote.hello().then(function (data) {
       var pizzaApp = SYMPHONY.services.subscribe('pizzaApp:controller')
       var dialogService = SYMPHONY.services.subscribe('dialogs')
 
+      // Pizza App - Manage Menu items
       var manageMenuTemplate =
             `<dialog>
                 <h3>Manage Menu</h3>
@@ -43,8 +45,7 @@ SYMPHONY.remote.hello().then(function (data) {
 
         if (manageMenuData.choices.map(o => o.name).indexOf(newItem) > -1) {
           dialogService.show('menuItemAddedDialog', 'menuItemAddedService', '<dialog>Item already exists<br/><br/></dialog>', {}, {})
-        }
-        else {
+        } else {
           pizzaApp.invoke('addMenu', { 'name': newItem }).then((menu) => {
             manageMenuData.choices = []
             menu.forEach(name => {
@@ -54,7 +55,7 @@ SYMPHONY.remote.hello().then(function (data) {
           })
         }
       }
-
+      // Pizza App - Render Order History
       pizzaApp.invoke('getOrderHistory').then((orderHistory) => {
         if (orderHistory.length === 0) {
           document.querySelector('#orderHistory').innerHTML = 'No orders yet'
@@ -67,7 +68,6 @@ SYMPHONY.remote.hello().then(function (data) {
             return `<tr><td>${order.id}</td><td>${formattedDateTime}</td><td>${order.choice}</td></tr>`
           })
           .join('')
-
         const tableData = `<table><tr><th>Order ID</th><th>Date</th><th>Order</th></tr>${rowData}</table>`
         document.querySelector('#orderHistory').innerHTML = tableData
       })

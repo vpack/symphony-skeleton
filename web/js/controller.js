@@ -1,6 +1,8 @@
 var pizzaName = 'pizzaApp:controller'
 var pizzaService = SYMPHONY.services.register(pizzaName)
 
+// Initialise connection for Extension API services
+// Register the Pizza App for remote Extension API services (id, services, localService)
 SYMPHONY.remote.hello().then(function (data) {
   SYMPHONY.application
     .register('pizzaApp', [ 'entity', 'modules', 'applications-nav' ], [ pizzaName ])
@@ -9,8 +11,9 @@ SYMPHONY.remote.hello().then(function (data) {
       var navService = SYMPHONY.services.subscribe('applications-nav')
       var entityService = SYMPHONY.services.subscribe('entity')
       var orderHistory = []
-
+      // Add our Pizza App to the left Nav
       navService.add('pizza-nav', 'Pizza App', pizzaName)
+      // Register our renderer to display structured objects
       entityService.registerRenderer('com.symphony.ps.pizzaMenu', {}, pizzaName)
 
       fetch('https://localhost:4000/orders')
@@ -18,10 +21,12 @@ SYMPHONY.remote.hello().then(function (data) {
         .then(res => {
           orderHistory = res
         })
-
+      // Implement our local Pizza App service
       pizzaService.implement({
+        // Pizza Menu - Main Renderer Pizza menu
         render: function (type, entityData) {
           const existingOrder = orderHistory.filter(o => o.id === entityData.quoteId)
+
           if (existingOrder.length === 1) {
             const template = `<entity id="button-template" class="template">
               <card id="card">
@@ -42,12 +47,13 @@ SYMPHONY.remote.hello().then(function (data) {
               return { data: {}, template: `<entity>Invalid element type ${entityData.type}</entity>` }
           }
         },
+        // List button options for each menu item
         getMenuTemplate: function (entityData) {
           const menuOptions = entityData.options
             .map(option => `<action class="button" id="${option.replace(/[^\w]/g, '')}"/>`)
             .join('')
-          const data = { accent: 'tempo-bg-color--blue' }
 
+          const data = { accent: 'tempo-bg-color--blue' }
           entityData.options.forEach(option => {
             const thisId = option.replace(/[^\w]/g, '')
             data[thisId] = {
@@ -60,7 +66,6 @@ SYMPHONY.remote.hello().then(function (data) {
               }
             }
           })
-
           const template = `<entity id="button-template" class="template">
               <card id="card">
                 <h2>Pizza Menu</h2>
@@ -68,13 +73,13 @@ SYMPHONY.remote.hello().then(function (data) {
                 <p>${menuOptions}</p>
               </card>
             </entity>`
-
           return {
             template,
             data,
             entityInstanceId: entityData.instanceId
           }
         },
+        // Action - After button is clicked
         action: function (data) {
           if (data.cmd === 'menuSelect') {
             const template =
@@ -85,8 +90,9 @@ SYMPHONY.remote.hello().then(function (data) {
               </card>
             </entity>`
 
+            // Pizza Menu - Holding page while we run the action
             entityService.update(data.entity.instanceId, template, { accent: 'tempo-bg-color--yellow' })
-
+            // Carry out action of updating SQL with new order
             fetch('https://localhost:4000/order', {
               method: 'POST',
               body: JSON.stringify({
@@ -103,6 +109,7 @@ SYMPHONY.remote.hello().then(function (data) {
               .catch(error => console.error('Error:', error))
           }
         },
+        // Pizza Menu - Re-Render Pizza menu to show action completed
         menuSelect: function (data) {
           const template =
                     `<entity id="button-template" class="template">
